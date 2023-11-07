@@ -9,20 +9,20 @@ contract Lottery is IERC20, Ownable {
     IERC20 public token;
 
     // Event
-    event BoughtTicket(address indexed from, uint256 amount, uint40[] bets);
-    event claimed(address indexed from, uint256 indexed round,uint256 messageCode);//messageCode 0 succeeded ,1 no prize,2 reserveinsufficient
+    event BoughtTicket(address indexed from, uint256 indexed round,uint256 indexed amount,uint80[] ticketsRecord);
+    event Claimed(address indexed from, uint256 indexed round,uint256 indexed amount,uint80[] ticketsRecord);//messageCode, 1 claimed but not win,2 claimed but reserveinsufficient,3 claimed and paid
     event Jackpot(address indexed from, uint256 indexed round,uint256 quantity);
-    event JackpotClaimed(address indexed from, uint256 indexed round,uint256 indexed quantity,string message);
+    event JackpotClaimed(address indexed from, uint256 indexed round,uint256 indexed amount,uint80[] ticketsRecord);
     // Errors
+    error AlreadyPaid(address from,uint256 round,uint80[] ticketsRecord);
     error PaymentFailed(address from,uint256 ErrorCode);
     error WaitSevenDays(address from,uint256 ErrorCode);
     error ZeroAddress(address from,uint256 ErrorCode);
     error NotCollector(address from,uint256 ErrorCode);
-    error NotExecutor(address from,uint256 ErrorCode);
+    error NotExecutor(address from,uint256 ErrorCode); 
+    error NotStandardTicket(address from, uint256 ErrorCode);
     error NotEnoughfeess(uint256 fees);
-    error NotStandardTicket(address from, uint40[]);
-
-        // constant
+    // constant
     // 常量设置
     uint16[14] public constant betMulti=[1,1,1,1,1,6,21,56,126,252,462,792,1287,2002]; //彩票价格除数
     uint16[5][9] public constant winMulti=[
@@ -54,6 +54,7 @@ contract Lottery is IERC20, Ownable {
 
     address public collector;//fees 收集者
     address public executor;//自动执行人
+    address public randomProvider;//合约所有者
     uint128[7] public lowPoolTemp = [0,0,0,0,0,0,0]; // 
     uint128[7] public highPoolTemp = [0,0,0,0,0,0,0]; // 
 
@@ -110,11 +111,19 @@ contract Lottery is IERC20, Ownable {
 
     }
 
+    // 非常危险，不能交给dao
     function setCollector(address _newCollector) external onlyOwner {
         if(_newCollector == address(0)){
             revert();
         }
        collector=_newCollector;
+    }
+
+    function setRandomProvider(address _newRandomProvider) external onlyOwner {
+        if(_newRandomProvider == address(0)){
+            revert();
+        }
+       randomProvider=_newRandomProvider;
     }
 
     function setExecutor(address _newExecutor) external onlyOwner {
@@ -141,8 +150,8 @@ contract Lottery is IERC20, Ownable {
         //if (!success ){random2()} //如果失败，再来一次,或后备随机数
         //if (!success ){revert}
         //1.清算低等奖金
-        uint256 l = lowPoolTemp[(currentRound+7)%7];//取出之前temp数据，    
-        lowPoolTemp[(currentRound+7)%7]=lowPool;//设置temp为当前轮数据，temp可以取钱，和fp不同。
+        uint256 l = lowPoolTemp[currentRound % 7];//取出之前temp数据，    
+        lowPoolTemp[currentRound % 7]=lowPool;//设置temp为当前轮数据，temp可以取钱，和fp不同。
         lowPool = l + rollPool/2; //设置当前轮数据，当前轮数据=之前temp数据+当前轮数据
 
 
@@ -152,7 +161,7 @@ contract Lottery is IERC20, Ownable {
             if (currentRound>6 ){
                 HPpaymentPool[currentRound-7]=highPoolTemp[currentRound % 7]; //设置永久池数据，round-7轮，round 0-6时，暂存池为0值不变
             }       
-            highPoolTemp[(currentRound+7)%7]=highPool; //暂存池已空，填入当前值数据，0轮即可，但需要+7，否则出错
+            highPoolTemp[currentRound % 7]=highPool; //暂存池已空，填入当前值数据，0轮即可，但需要+7，否则出错
             highPool=rollPool/2;
         }
        //b. 当前轮大于6，7轮前无人中奖，永久池计入0。
@@ -161,7 +170,7 @@ contract Lottery is IERC20, Ownable {
           if (currentRound>6 ){
                HPpaymentPool[currentRound-7]=0;// 设置永久池数据，round-7轮，第7轮开始才需要设置
             }
-            highPoolTemp[(currentRound+7)%7]=highPool; //暂存池已空，填入当前值数据，0轮即可，但需要+7，否则出错
+            highPoolTemp[currentRound % 7]=highPool; //暂存池已空，填入当前值数据，0轮即可，但需要+7，否则出错
             highPool=t+rollPool/2;//暂存池已空，填入缓存数据
         }
            
@@ -178,77 +187,79 @@ contract Lottery is IERC20, Ownable {
         uint256 q;//ticket quantity
         uint256 w;//Jackpot quantity
         uint256 m;//mulitbet number
-        uint256 amount_=0;
+        uint256 all;// sum of lowprize tickets*bunusMultiplier
         uint80[] memory c = ticketsRecord[msg.sender][_round];//ticket number record
 
-        if (c[0] & uint80(1<<1 | 1) == 2){
-            revert(msg.sender,"already claimed");
+        if (c[0] & 3 == (3 || 1)){ //3 = binary 11,取最后两位状态
+            revert ;
         }
-        else if (c[0] & uint80(0x11) == 1){
+        else if (c[0] & 3  == 2){ //3 = binary 11,取最后两位状态
             lowPrizeClaim(c, _round) ;
-        }
+        } 
         else{
 
         for(uint i = 0; i < c.length; ++i) {
             t = uint16(c[i]>>64);
             m = uint256((c[i]>>4) & 0xf);
-            q = uint256(c[i]>>40 & 0xffffff);
+            q = uint256(c[i]>>40 & 0xffffff); //前40位的后24位值
              
-            if (m=0 ){
+            if (m==0 ){
                 if (t == winNumber[_round]){
-                    c[i] = c[i] | uint80(0x1101) ; //1101头奖claimed，状态更改
+                    c[i] |= uint80(13) ; //13=binary 1101头奖claimed，状态更改
                     w += q; //头奖总计票数   
                 } 
 
                 else {
                     t = t & winNumber[_round];
                     if (checkOneBits(t)==4){
-                    c[i] = c[i] | uint80(0x1001);//1001二奖claimed，状态更改
-                    amount_ += q*20/priceDiv;
+                    c[i] |= uint80(9);//9=binary1001二奖claimed，状态更改
+                    all += q*20;
                     }
                     if (checkOneBits(t)==3){
-                    c[i] = c[i] | uint80(0x0101);//0101三奖claimed，状态更改
-                    amount_ += q*2/priceDiv;
+                    c[i] |= uint80(5);//5=binary0101三奖claimed，状态更改
+                    all += q*2;
                     }
              
                 }
                
             }//单式计算结束
 
-            if (m>0 ){
+            if (m>5){
                     t = t & winNumber[_round];
                     uint256 count=checkOneBits(t);
                     if (count==5){
                         c[i] = c[i] | uint80(0x1101) ; //1101头奖claimed
                         w += uint256(t & uint40(0xffffff)); //头奖总计票数 
-                        amount_ += q*20*winMulti[m-6][0]/priceDiv; //同时获得的二奖
-                        amount_ += q*2*winMulti[m-6][1]/priceDiv; //同时获得的三奖
+                        all += q*20*winMulti[m-6][0];//同时获得的二奖
+                        all += q*2*winMulti[m-6][1]; //同时获得的三奖
                     }
 
                     if (checkOneBits(t)==4){
                         c[i] = c[i] | uint80(0x1001) ; //1001二奖claimed，状态更改
-                        amount_ += q*20*winMulti[m-6][2]/priceDiv; //同时获得的二奖
-                        amount_ += q*2*winMulti[m-6][3]/priceDiv; //同时获得的三奖
+                        all += q*20*winMulti[m-6][2]; //同时获得的二奖
+                        all += q*2*winMulti[m-6][3]; //同时获得的三奖
                     }
 
                     if (checkOneBits(t)==3){         
                         c[i] = c[i] | uint80(0x0101);//0101三奖claimed，状态更改
-                        amount_ += q*2*winMulti[m-6][4]/priceDiv; //同时获得的三奖
+                        all += q*2*winMulti[m-6][4]; //同时获得的三奖
                     }    
                         
             }//复式计算结束
 
         }
         }//for循环结束，最终支付阶段
-        if (amount_ > 0 ){
-            prizeAmount[msg.sender][_round][0] = amount_;
-            }
-        Settlement(c,w,amount_,_round);
+        ticketsRecord[msg.sender][_round] = c;//状态更改为claimed
+        if (all > 0 ){
+           Settlement(c,w,all,_round); 
+        }
+        if (all = 0 ){
+           emit Claimed(msg.sender, _round, amount_,c); 
+        }
     }
 
     function Settlement(uint80[] memory c,uint256 w,uint256 amount_,uint256 _round) internal {
-
-        ticketsRecord[msg.sender][_round] = c;
+        uint256 amount_;
         if (w > 0 ){
             jackpotSum[_round] += w; //头奖总计票数
             jackpotWinner[_round].push(msg.sender);//头奖计入中奖者地址
@@ -256,24 +267,23 @@ contract Lottery is IERC20, Ownable {
             emit Jackpot(msg.sender,_round,w); //发出事件
         }
         
-        if (amount_ == 0 ){
+        if (all == 0 ){
             fullfilled(c, _round);
-        emit claimed(msg.sender,_round,1);//messageCode 0 succeeded ,1 no prize,
+            emit Claimed(msg.sender, _round, amount_,c);//messageCode 0 succeeded ,1 no prize,
         }
 
-        if (amount_ > 0 ){
-            if (lowPoolTemp[(currentRound+7)%7]>amount_){
+        if (all> 0 ){
+            amount_ = all/priceDiv;
+            if (lowPoolTemp[currentRound % 7]>amount_){
                 token.transfer(msg.sender,amount_);
-                lowPoolTemp[(currentRound+7)%7] -= amount_;
+                lowPoolTemp[currentRound % 7] -= amount_;
                 fullfilled(c, _round);
-                ticketsRecord[msg.sender][_round] = c ;
                 emit claimed(msg.sender,_round,0);//messageCode 0 succeeded
                 }
             else if (reserve >amount_ ){
                 token.transfer(msg.sender,amount_);
                 reserve -= amount_;
                 fullfilled(c, _round);
-                ticketsRecord[msg.sender][_round] = c ;
                 emit claimed(msg.sender,_round,0);//messageCode 0 succeeded
                 }
             emit claimed(msg.sender,_round,2);//messageCode 0 succeeded ,1 no prize,2 reserveinsufficient
@@ -283,16 +293,16 @@ contract Lottery is IERC20, Ownable {
 
     function fullfilled(uint80[] memory c, uint256 _round) internal {
         for (uint256 i = 0; i < c.length; ++i) {
-            c[i] = c[i] | uint80(0x10) ; //状态更改为paid
+            c[i]  |= uint80(3) ; //状态更改为paid
         }
         ticketsRecord[msg.sender][_round] = c;
     }
 
     function lowPrizeClaim(uint80[] memory c,uint256 _round) internal {
         uint256 amount_=prizeAmount[msg.sender][_round][0];
-            if (lowPoolTemp[(currentRound+7)%7]>amount_){
+            if (lowPoolTemp[currentRound % 7]>amount_){
                 token.transfer(msg.sender,amount_);
-                lowPoolTemp[(currentRound+7)%7] -= amount_;
+                lowPoolTemp[currentRound % 7] -= amount_;
                 fullfilled(c, _round);    
                 emit claimed(msg.sender,_round,0);//messageCode 0 succeeded
                 }
@@ -327,9 +337,9 @@ contract Lottery is IERC20, Ownable {
     function buyTickets(uint40[] calldata _bets, uint256 calldata _coupon) external {
         uint256 amount_ = 0;//total purchase amount
         uint80 memory t;//signed ticket code uint80
-        uint256 c;//count of win number
+        uint256 m;//count of ticket 1 number
         uint256 q;//quantity in ticket
-        uint256 m;//mulitbet number
+
         uint256 all;// sum of all ticket
            for (uint256 i = 0; i < _bets.length; i++) {
              //coupon 发行号1001-1999
@@ -337,9 +347,13 @@ contract Lottery is IERC20, Ownable {
                     revert(NotStandardTicket(msg.sender, _bets));
                 }
                 if (_coupon>1000 & _coupon<2000) {
+                    m = checkOneBits(_bets[i]);
+                    if (m>14){
+                        revert NotStandardTicket(msg.sender, _bets);
+                    }
                     q = _bets[i] & uint40(0xffffff);
                     t = uint80((_bets[i]<<32 | uint72(block.timestamp)<<8)); //运算优先级，还需要检查
-                    c = checkOneBits(_bets[i]);
+                    
                     t = t | uint80(c<<2);//构造票据储存格式
                     ticketsRecord[msg.sender][currentRound].push(t);
                     all += betMulti[c]*q/priceDiv;            

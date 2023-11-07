@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="diMc_u89_4QclQjnwLPV" name="第 1 页">
-        <mxGraphModel dx="649" dy="490" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="550" dy="490" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -535,34 +535,37 @@
                         <mxRectangle width="53" height="30" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="232" value="" style="shape=table;startSize=0;container=1;collapsible=0;childLayout=tableLayout;" vertex="1" parent="1">
+                <mxCell id="232" value="" style="shape=table;startSize=0;container=1;collapsible=0;childLayout=tableLayout;" parent="1" vertex="1">
                     <mxGeometry x="556.75" y="829.62" width="104.75" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="233" value="" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;top=0;left=0;bottom=0;right=0;collapsible=0;dropTarget=0;fillColor=none;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="232">
+                <mxCell id="233" value="" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;top=0;left=0;bottom=0;right=0;collapsible=0;dropTarget=0;fillColor=none;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="232" vertex="1">
                     <mxGeometry width="104.75" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="234" value="2bit pirze level" style="shape=partialRectangle;html=1;whiteSpace=wrap;connectable=0;overflow=hidden;fillColor=none;top=0;left=0;bottom=0;right=0;pointerEvents=1;" vertex="1" parent="233">
+                <mxCell id="234" value="2bit pirze level" style="shape=partialRectangle;html=1;whiteSpace=wrap;connectable=0;overflow=hidden;fillColor=none;top=0;left=0;bottom=0;right=0;pointerEvents=1;" parent="233" vertex="1">
                     <mxGeometry width="105" height="30" as="geometry">
                         <mxRectangle width="105" height="30" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="235" value="" style="endArrow=classic;startArrow=classic;html=1;" edge="1" parent="1">
+                <mxCell id="235" value="" style="endArrow=classic;startArrow=classic;html=1;" parent="1" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="680.75" y="829.6199999999999" as="sourcePoint"/>
                         <mxPoint x="680" y="710" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="236" value="00&amp;nbsp; &amp;nbsp; buyed" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                <mxCell id="236" value="00&amp;nbsp; &amp;nbsp; buyed" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="690.75" y="795" width="72" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="237" value="01&amp;nbsp; claimed" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                <mxCell id="237" value="01&amp;nbsp; notwin" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="690.75" y="765" width="72" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="238" value="10&amp;nbsp; &amp;nbsp; paid" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                <mxCell id="238" value="10 pending" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="690.75" y="735" width="72" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="239" value="11&amp;nbsp; &amp;nbsp; FP" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                <mxCell id="239" value="11&amp;nbsp; &amp;nbsp; FP" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="576.75" y="705" width="72" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="240" value="11&amp;nbsp; &amp;nbsp; paid" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="690.75" y="705" width="72" height="20" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

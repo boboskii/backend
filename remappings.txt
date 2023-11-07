@@ -1,9 +1,8 @@
 @prb/math/=lib/prb-math/src/
-ds-test/=lib/forge-std/lib/ds-test/src/
+ds-test/=lib/forge-std/lib/ds-test/src/ 
 forge-std/=lib/forge-std/src/
 prb-math/=lib/prb-math/src/
 prb-test/=lib/prb-math/lib/prb-test/src/
 solady/=lib/solady/
 solmate/=lib/solmate/src/
-@api3/=node_modules/@api3/
-@openzeppelin/=node_modules/@openzeppelin/
+@prb/test/=lib/prb-math/lib/prb-test/src/
