@@ -125,7 +125,7 @@ contract Lottery is IERC20, Ownable {
         _;
     }
 
-    function Withdrawfees() external onlyCollector returns (bool) {
+    function withDrawFees() external onlyCollector returns (bool) {
         if (fees > 10) {
             token.transfer(executor, fees);
             fees = 0;
@@ -201,7 +201,7 @@ contract Lottery is IERC20, Ownable {
             if (currentRound > 6) {
                 HPpaymentPool[currentRound - 7] = 0; // 设置永久池数据，round-7轮，第7轮开始才需要设置
             }
-            highPoolTemp[currentRound % 7] = highPool; //暂存池已空，填入当前值数据，0轮即可，但需要+7，否则出错
+            highPoolTemp[currentRound % 7] = highPool; //暂存池已空，填入当前值数据
             highPool = t + rollPool / 2; //暂存池已空，填入缓存数据
         }
 

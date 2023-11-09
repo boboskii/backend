@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity 0.8.22;
 
-contract CSM {
+import "solmate/mixins/ERC4626.sol";
+import "solmate/auth/Owned.sol";
+
+contract ZSM is ERC4626, Owned {
+
+    mapping(address => uint256) public shareHolder;//4626,shareHolder
+
+    uint128 public fees ; // 费用库
+    address public collector;
+
     uint256 public contractBalance;
     uint256 round = 0;
     uint8[3] speed0 = [31, 51, 71];
@@ -9,10 +18,85 @@ contract CSM {
 
     event Result(address indexed from, uint256 timestamp, string message);
     event result(uint256[], uint256[], uint256);
-
-    constructor() payable {}
-
     event balances(uint256 betAmount, uint256 userBalance, uint256 contractBalance);
+
+    constructor(
+        ERC20 _asset,
+        string memory _name,
+        string memory _symbol
+    ) ERC4626(_asset, _name, _symbol) {
+
+    }
+
+    modifier onlyCollector() {
+        if (msg.sender != collector) {
+            revert();
+        }
+        _;
+    }
+
+
+    function withDrawFees() external onlyCollector returns (bool) {
+        if (fees > 10) {
+            asset.transfer(collector, fees);
+            fees = 0;
+            return true;
+        } else {
+            revert(NotEnoughfeess());
+            return false;
+        }
+    }
+
+// 4626
+    function _deposit(uint _assets) public {
+    // checks that the deposited amount is greater than zero.
+    require(_assets > 0, "Deposit less than Zero");
+    // calling the deposit function ERC-4626 library to perform all the functionality
+    deposit(_assets, msg.sender);
+    // Increase the share of the user
+    shareHolder[msg.sender] += _assets;
+}
+
+   // 4626 returns total number of assets
+    function totalAssets() public view override returns (uint256) {
+    return asset.balanceOf(address(this));
+    } 
+
+    // returns total balance of user ???
+    function totalAssetsOfUser(address _user) public view returns (uint256) {
+    return asset.balanceOf(_user);
+    }
+
+    function totalShareOfUser(address _user) public view returns (uint256) {
+    return asset.balanceOf(_user);
+    }
+
+    /**
+    * @notice Function to allow msg.sender to withdraw their deposit plus accrued interest
+    * @param _shares amount of shares the user wants to convert
+    * @param _receiver address of the user who will receive the assets
+    */
+    function _withdraw(uint _shares, address _receiver) public {
+    // checks that the deposited amount is greater than zero.
+    require(_shares > 0, "withdraw must be greater than Zero");
+    // Checks that the _receiver address is not zero.
+    require(_receiver != address(0), "Zero Address");
+    // checks that the caller is a shareholder
+    require(shareHolder[msg.sender] > 0, "Not a shareHolder");
+    // checks that the caller has more shares than they are trying to withdraw.
+    require(shareHolder[msg.sender] >= _shares, "Not enough shares");
+    // Calculate 10% yield on the withdraw amount
+    uint256 percent = (2 * _shares) / 1000;
+    // Calculate the total asset amount as the sum of the share amount plus 10% of the share amount.
+    uint256 assets = _shares + percent;
+    // calling the redeem function from the ERC-4626 library to perform all the necessary functionality
+    redeem(assets, _receiver, msg.sender);
+    // Decrease the share of the user
+    shareHolder[msg.sender] -= _shares;
+
+    }
+
+
 
     function play(uint256 _betAmount) public payable {
         // Uncomment below code once dummy user has balance
