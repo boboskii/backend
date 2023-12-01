@@ -6,7 +6,9 @@ import "openzeppelin/contracts/access/Ownable.sol";
 import "solmate/auth/Owned.sol";
 
 contract Lottery is IERC20, Ownable {
-    IERC20 public token;
+     //https://docs.moonbeam.network/cn/builders/interoperability/xcm/xc20/overview/
+    // moonbeam xcUSDC: 0xFFfffffF7D2B0B761Af01Ca8e25242976ac0aD7D
+    IERC20 public constant token=IERC20(0xFFfffffF7D2B0B761Af01Ca8e25242976ac0aD7D);
 
     // Event
     event BoughtTicket(

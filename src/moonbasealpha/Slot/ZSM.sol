@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
-import "solmate/mixins/ERC4626.sol";
+import "@solmate/mixins/ERC4626.sol";
 import "solmate/auth/Owned.sol";
 
 contract ZSM is ERC4626, Owned {
