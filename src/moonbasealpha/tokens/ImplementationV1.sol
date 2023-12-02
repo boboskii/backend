@@ -1,45 +1,24 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.22;
 
-pragma solidity 0.8.22;
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-import {Ownable} from "@solady/src/auth/Ownable.sol";
-import {UUPSUpgradeable} from "@solady/src/utils/UUPSUpgradeable.sol";
-
-
-contract MyContract is Ownable, UUPSUpgradeable {
+contract MyContract is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @custom:oz-upgrades-unsafe-allow constructor
-    /// https://etherscan.io/address/0x0000000000001c05075915622130c16f6febc541#code
-    /// Recommended usage:
-/// 1. Deploy the ERC4337 as an implementation contract, and verify it on Etherscan.
-/// 2. Create a factory that uses `LibClone.deployERC1967` or
-///    `LibClone.deployDeterministicERC1967` to clone the implementation.
-///    See: `ERC4337Factory.sol`.
-
-
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                        INITIALIZER                         */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @dev Initializes the account with the owner. Can only be called once.
-    function initialize(address newOwner) public payable virtual {
-        _initializeOwner(newOwner);
+    constructor() {
+        _disableInitializers();
     }
 
-        /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                         OVERRIDES                          */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @dev Requires that the caller is the owner or the account itself.
-    /// This override affects the `onlyOwner` modifier.
-    function _checkOwner() internal view virtual override(Ownable) {
-        if (msg.sender != owner()) if (msg.sender != address(this)) revert Unauthorized();
+    function initialize(address initialOwner) initializer public {
+        __Ownable_init(initialOwner);
+        __UUPSUpgradeable_init();
     }
 
-    /// @dev To prevent double-initialization (reuses the owner storage slot for efficiency).
-    function _guardInitializeOwner() internal pure virtual override(Ownable) returns (bool) {
-        return true;
-    }
-
-
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        onlyOwner
+        override
+    {}
 }
