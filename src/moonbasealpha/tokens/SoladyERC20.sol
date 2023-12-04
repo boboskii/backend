@@ -7,6 +7,8 @@ contract SoladyERC20 is ERC20 {
     string internal _name;
     string internal _symbol; 
     address internal immutable bridge;
+   
+   error NotBridge();
 
    event BridgeMint(address indexed _to,  uint256 _amount);
    event BridgeBurn(address indexed _from,  uint256 _amount);
@@ -21,7 +23,7 @@ contract SoladyERC20 is ERC20 {
         _name = name_;
         _symbol = symbol_;
         _mint(deployer_, initialSupply_);
-        bridge = _bridge;
+        bridge = bridge_;
     }
 
     function name() public view virtual override returns (string memory) {
@@ -32,7 +34,7 @@ contract SoladyERC20 is ERC20 {
         return _symbol;
     }
 
-    function getBridge() public view returns (address) {
+    function getBridgeAddress() public view returns (address) {
         return bridge;
     }
 
@@ -50,7 +52,7 @@ contract SoladyERC20 is ERC20 {
 
     modifier onlyBridge() {
         if (msg.sender != bridge) {
-            revert();
+            revert(NotBridge());
         }
         _;
     }

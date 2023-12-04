@@ -7,9 +7,9 @@ interface IBridgeRouter {
     event remoteMinted(uint256 indexed chainId, address indexed tokenAddress, uint256 amount);
 
     function remoteMint(
-        string calldata destinationChain,
-        string calldata destinationAddress,
-        string calldata amount_
+        string calldata destinationChain_,
+        string calldata destinationAddress_,
+        uint256  value_
     ) external;
 
 }
