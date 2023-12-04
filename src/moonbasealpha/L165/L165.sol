@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
-import "openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "openzeppelin/contracts/access/Ownable.sol";
-import "solmate/auth/Owned.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@solmate/auth/Owned.sol";
 
 contract Lottery is IERC20, Ownable {
      //https://docs.moonbeam.network/cn/builders/interoperability/xcm/xc20/overview/
