@@ -3,10 +3,10 @@ pragma solidity 0.8.22;
 
 // 来自https://github.com/pear-protocol/pear-public-sale/blob/main/src/PublicSale.sol
 
-import '@openzeppelin/contracts/access/Ownable.sol';
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {Owned} from "solmate@6.2.0/src/auth/Owned.sol";
+import {IERC20} from "@openzeppelin/contracts@5.0.0/token/ERC20/IERC20.sol";
 
-contract PublicSale is Ownable {
+contract PublicSale is Owned {
 
     error SaleIsPaused();
 
@@ -24,7 +24,7 @@ contract PublicSale is Ownable {
     bool private isPaused = true;
 
 
-    constructor(address usdcToken_, address Token_, address owner_) Ownable(owner_){
+    constructor(address usdcToken_, address Token_, address owner_) Owned(owner_){
         usdcToken = IERC20(usdcToken_);
         Token = IERC20(Token_);
     }
@@ -69,9 +69,9 @@ contract PublicSale is Ownable {
      */
     function withdrawUsdc() external onlyOwner {
         uint256 balance = usdcToken.balanceOf(address(this));
-        bool success = usdcToken.transfer(owner(), balance);
+        bool success = usdcToken.transfer(owner, balance);
         require(success,'Transfer failed');
-        emit FundsWithdrawn(owner(), balance);
+        emit FundsWithdrawn(owner, balance);
     }
 
     function setPricePerToken(uint256 price_) external onlyOwner {
@@ -81,7 +81,7 @@ contract PublicSale is Ownable {
     function stopSale() external onlyOwner {
         isPaused = true;
         uint256 balance = Token.balanceOf(address(this));
-        bool success = Token.transfer(owner(), balance);
+        bool success = Token.transfer(owner, balance);
         require(success,'Transfer failed');
         emit SalePaused(uint40(block.timestamp));
     }

@@ -1,9 +1,7 @@
-@prb/math/=lib/prb-math/src/
 ds-test/=lib/forge-std/lib/ds-test/src/
 forge-std/=lib/forge-std/src/
 solady@0.0.145/=lib/solady/
-solmate@7.0.0-alpha.3/=lib/solmate/
-@prb/test/=lib/prb-math/lib/prb-test/src/
-@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
-@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
-@axelar-gmp-sdk-solidity/contracts@5.6.3/=lib/axelar-gmp-sdk-solidity/contracts/
+solmate@6.2.0/=lib/solmate/
+@openzeppelin/contracts@5.0.0/=lib/openzeppelin-contracts/contracts/
+@openzeppelin/contracts-upgradeable@5.0.0/=lib/openzeppelin-contracts-upgradeable/contracts/
+@axelar-network/axelar-gmp-sdk-solidity@5.6.3/=lib/axelar-gmp-sdk-solidity/

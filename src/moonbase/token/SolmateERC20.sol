@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity 0.8.22;
 
-import {ERC20} from "solmate@7.0.0-alpha.3/src/tokens/ERC20.sol";
+import {ERC20} from "solmate@6.2.0/src/tokens/ERC20.sol";
 
 contract SolmateERC20 is ERC20 {
 
