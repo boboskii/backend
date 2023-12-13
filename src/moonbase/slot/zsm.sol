@@ -1,63 +1,45 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
-import "@solmate/mixins/ERC4626.sol";
-import "solmate/auth/Owned.sol";
+import "solmate@6.2.0/src/mixins/ERC4626.sol";
+import "@api3/airnode-protocol@0.13.0/contracts/rrp/requesters/RrpRequesterV0.sol";
 
-contract ZSM is ERC4626, Owned {
+contract ZSM is ERC4626,RrpRequesterV0 {
 
-    //4626 accounting viarables
-    uint256 public shareSum;
-    uint256 public fees ; // 费用库
-    address public collector;
-    mapping(address=>uint256) shareHolder;
+
 
     //slot viarables
-    uint64[3] randomNums;
-    uint8 acceleration = 10;
-    uint256 bonus;
-    uint8[3][] result;
+
+    uint256 playNonces;
+    mapping(uint256 => uint256) public playRecode;
+
+    // api3
+    address public airnode ;
+    bytes32 public endpointIdUint256;
+    bytes32 public endpointIdUint256Array;
+    uint16[16] public qrngU16Array;
+    address public sponsorWallet;
+    mapping(bytes32 => bool) public expectingRequestWithIdToBeFulfilled;
+
 
     event Result(address indexed from,uint8[3][] indexed result, uint256 bonus);
-    error NotEnoughfeess();
+
+    event RequestedArray(bytes32 indexed requestId, uint256 size);
+    event ReceivedArray(bytes32 indexed requestId, uint16[16] response);
 
 
     constructor(
         ERC20 _asset,
         string memory _name,
         string memory _symbol,
-        address _owner
-    ) ERC4626(_asset, _name, _symbol) Owned(_owner) {
-        _asset = address(0x0);
+        address _airnodeRrp
+    ) ERC4626(_asset, _name, _symbol) RrpRequesterV0(_airnodeRrp) {
+        _asset = ERC20(0x0);
         _name = "Zeno Slot Machine Shares-MB-VDOT";
         _symbol = "ZS-MB-VDOT";
-        _owner = msg.sender;
     }
 
-
-    /*//////////////////////////////////////////////////////////////
-                            ZENO FEES LOGIC
-    //////////////////////////////////////////////////////////////*/
-
-    modifier onlyCollector() {
-        if (msg.sender != collector) {
-            revert();
-        }
-        _;
-    }
-
-    function withDrawFees() external onlyCollector returns (bool, uint256) {
-        if (fees > 10) {
-            asset.transfer(collector, fees);
-            return (true, fees);
-            fees = 0;
-        } else {
-            revert(NotEnoughfeess());
-            return (false, fees);
-        }
-    }
-
-    /*//////////////////////////////////////////////////////////////
+        /*//////////////////////////////////////////////////////////////
                             VAULT LOGIC
     //////////////////////////////////////////////////////////////*/
 
@@ -74,7 +56,6 @@ contract ZSM is ERC4626, Owned {
     require(_assets > 0, "Require greater than Zero");
     // calling the deposit function ERC-4626 library to perform all the functionality
     deposit(_assets, msg.sender);
-    shareHolder[msg.sender] += _shares;
     // Increase the share of the user
     }
 
@@ -87,8 +68,55 @@ contract ZSM is ERC4626, Owned {
     require(balanceOf[msg.sender] > 0, "Not a shareHolder");
     require(balanceOf[msg.sender] >= _shares, "Not enough shares");
     redeem(_shares, msg.sender, msg.sender);
-    shareHolder[msg.sender] -= _shares; // 写shareHolder，supply，balanceOf三个储存
     }
+
+
+    /*//////////////////////////////////////////////////////////////
+                          API3  RANDOM LOGIC
+    //////////////////////////////////////////////////////////////*/
+
+    function setRequestParameters(
+        address _airnode,
+        bytes32 _endpointIdUint256,
+        bytes32 _endpointIdUint256Array,
+        address _sponsorWallet
+    ) external {
+        airnode = _airnode;
+        endpointIdUint256 = _endpointIdUint256;
+        endpointIdUint256Array = _endpointIdUint256Array;
+        sponsorWallet = _sponsorWallet;
+    }
+
+    function makeRandomArray(uint256 size) internal   {
+        bytes32 requestId = airnodeRrp.makeFullRequest(
+            airnode,
+            endpointIdUint256Array,
+            address(this),
+            sponsorWallet,
+            address(this),
+            this.fulfill.selector,
+            // Using Airnode ABI to encode the parameters
+            abi.encode(bytes32("1u"), bytes32("size"), size)
+        );
+        expectingRequestWithIdToBeFulfilled[requestId] = true;
+        emit RequestedArray(requestId, size);
+    }
+
+    function fulfill(bytes32 requestId, bytes calldata data)
+        external
+        onlyAirnodeRrp
+    {
+        require(
+            expectingRequestWithIdToBeFulfilled[requestId],
+            "Request ID not known"
+        );
+        expectingRequestWithIdToBeFulfilled[requestId] = false;
+        uint256[] memory qrngUint256Array = abi.decode(data, (uint256[]));     
+        play()
+        emit ReceivedArray(requestId, qrngU16Array);
+    }
+
+
 
     /*//////////////////////////////////////////////////////////////
                             SLOTMACHINE LOGIC
@@ -109,25 +137,25 @@ contract ZSM is ERC4626, Owned {
         return(a);
     }
 
-    function random(uint256 number) public view returns(uint256[]) {
-        for (uint256 i; i < number; ++i) {
-            randomNums[i] = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty,i)));
-        }
-        return insertionSort(randomNums);
-    }
-
     function play(uint256 _betAmount) public payable {
-        // Uncomment below code once dummy user has balance
+ 
     }
 
      //单次下注
-    function betOnce() public returns (uint256) {}
+    function bet(uint256 _betAmount,uint256 times) public returns (bool) {
+        require(_betAmount > 0 ,'Must greater than zero');
+        require(_betAmount < totalAssets()/4 ,'Must lower than a quarter of totalAssets');
+        require(times>0 && times<6,'Only can play 1-5 times')
+        ++playNonces;
+        playRecode[playNonces] = uint160(msg.sender) << 96 | uint88(_betAmount) << 8 | uint8(times);
+        makeRandomArray(3*times);
+        return ture;
+    }
 
     //多次下注
     function betMulti() public returns (uint256) {}
 
  
-    //慢雾安全团队建议开发者们不要将用户的下注与开奖放在同一个交易内
     function Bets(uint256 _betAmount,uint256 _rounds) public returns (uint256[] memory, uint256[] memory, uint256) {
         uint256 bonusRate = 0;
         uint256[] memory slot = new uint[](3);
